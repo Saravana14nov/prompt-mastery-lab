@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,29 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom colors for Prompt Mastery
+				brand: {
+					DEFAULT: '#3b82f6', // Main brand color (blue)
+					dark: '#1d4ed8',
+					light: '#60a5fa'
+				},
+				success: {
+					DEFAULT: '#10b981', // Green
+					light: '#d1fae5'
+				},
+				warning: {
+					DEFAULT: '#f59e0b', // Amber
+					light: '#fef3c7'
+				},
+				info: {
+					DEFAULT: '#3b82f6', // Blue
+					light: '#dbeafe'
+				},
+				difficulty: {
+					basic: '#22c55e', // Green for basic level
+					intermediate: '#f59e0b', // Amber for intermediate level
+					advanced: '#ef4444' // Red for advanced level
 				}
 			},
 			borderRadius: {
@@ -89,6 +113,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			fontFamily: {
+				'sans': ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 			}
 		}
 	},
