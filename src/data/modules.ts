@@ -6,37 +6,37 @@ export const modules: Module[] = [
   {
     id: "basic-intro",
     courseId: "basic-prompt-engineering",
-    title: "Introduction to Prompt Engineering",
+    title: "Introduction to Prompting",
     description: "Learn the fundamental concepts and principles of prompt engineering.",
     lessons: 3,
-    duration: "45 min",
+    duration: "50 min",
     order: 1
   },
   {
     id: "basic-structure",
     courseId: "basic-prompt-engineering",
-    title: "Prompt Structure and Components",
-    description: "Understand the key components that make effective prompts.",
+    title: "Crafting Basic Prompts",
+    description: "Learn how to write clear, specific prompts with appropriate context and formatting.",
     lessons: 3,
-    duration: "1 hour",
+    duration: "55 min",
     order: 2
   },
   {
     id: "basic-clarity",
     courseId: "basic-prompt-engineering",
-    title: "Clarity and Specificity",
-    description: "Learn how to write clear and specific prompts to get better results.",
+    title: "Practice and Refinement",
+    description: "Learn about common mistakes and how to refine prompts through iteration.",
     lessons: 3,
-    duration: "1 hour",
+    duration: "1 hour 5 min",
     order: 3
   },
   {
     id: "basic-iteration",
     courseId: "basic-prompt-engineering",
-    title: "Prompt Iteration and Refinement",
-    description: "Practice iterating and refining prompts to improve outcomes.",
-    lessons: 3,
-    duration: "1 hour 15 min",
+    title: "Beginner Challenge Exercises",
+    description: "Apply your knowledge through structured challenges and assessments.",
+    lessons: 4,
+    duration: "2 hours 15 min",
     order: 4
   },
   
@@ -143,3 +143,4 @@ export const modules: Module[] = [
     order: 6
   }
 ];
+

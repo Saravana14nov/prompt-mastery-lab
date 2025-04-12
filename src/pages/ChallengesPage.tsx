@@ -11,8 +11,35 @@ const ChallengesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<'all' | 'basic' | 'intermediate' | 'advanced'>('all');
   
-  // Mock challenges data
+  // Updated challenges data to include beginner level course challenges
   const challenges: Challenge[] = [
+    {
+      id: "info-extraction-challenge",
+      title: "Information Extraction Challenge",
+      description: "Extract structured information from a product description",
+      difficulty: "basic",
+      instructions: "Create a prompt that extracts specific product details from a product description and formats them in a structured way for database entry.",
+      hints: ["Request a specific output format like JSON", "Be clear about exactly which fields need to be extracted"],
+      evaluation: "The prompt should clearly specify what information to extract and the desired structured output format."
+    },
+    {
+      id: "instructional-content-challenge",
+      title: "Beginner Cooking Instructions",
+      description: "Create clear instructions for a complete cooking novice",
+      difficulty: "basic",
+      instructions: "Create a prompt that generates beginner-friendly cooking instructions for making spaghetti with tomato sauce from scratch, including ingredients, tools, steps, and common mistakes.",
+      hints: ["Specify the audience's very limited cooking experience", "Ask for visual cues for doneness"],
+      evaluation: "The prompt should emphasize clarity and detail appropriate for someone with no cooking experience."
+    },
+    {
+      id: "creative-writing-challenge",
+      title: "Character Development",
+      description: "Get AI help developing a fictional character",
+      difficulty: "basic",
+      instructions: "Create a prompt that helps develop a retired detective character for a short story set in a coastal town, including background, traits, motivation, and approach to solving mysteries.",
+      hints: ["Request narrative format rather than bullet points", "Balance specific requirements with room for creativity"],
+      evaluation: "The prompt should guide the AI to provide creative inspiration while allowing flexibility for your own ideas."
+    },
     {
       id: "extraction-challenge",
       title: "Data Extraction Challenge",
@@ -21,15 +48,6 @@ const ChallengesPage: React.FC = () => {
       instructions: "Write a prompt that extracts names, dates, and locations from the provided text and returns them in a structured format.",
       hints: ["Consider asking for specific output format"],
       evaluation: "The prompt should clearly specify what entities to extract and the desired output format."
-    },
-    {
-      id: "creative-writing-challenge",
-      title: "Creative Writing Assistant",
-      description: "Create a prompt that helps generate engaging stories",
-      difficulty: "basic",
-      instructions: "Write a prompt that helps an AI generate creative short stories with consistent characters and plotting.",
-      hints: ["Consider including parameters for genre and theme"],
-      evaluation: "The prompt should guide the AI to create structured, coherent stories with well-defined elements."
     },
     {
       id: "chain-of-thought-challenge",
