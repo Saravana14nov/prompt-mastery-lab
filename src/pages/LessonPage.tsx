@@ -86,7 +86,7 @@ const LessonPage: React.FC = () => {
             </Link>
           </Button>
         ) : (
-          <div /> {/* Empty div to maintain the space */}
+          <div /> /* Empty div to maintain the space */
         )}
         
         {nextLesson ? (
