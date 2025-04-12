@@ -46,7 +46,7 @@ const LessonPage: React.FC = () => {
   }
   
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Breadcrumbs / Navigation */}
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" size="sm" asChild>
@@ -66,17 +66,18 @@ const LessonPage: React.FC = () => {
           {course.title} • {module.title}
         </p>
         <h1 className="text-3xl font-bold tracking-tight mt-1">{lesson.title}</h1>
+        <p className="mt-2 text-muted-foreground">{lesson.description}</p>
       </div>
 
       {/* Lesson content */}
-      <Card className="p-6 mb-8">
+      <Card className="p-8 mb-8 shadow-md">
         <div className="prose max-w-none markdown-content">
           <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
         </div>
       </Card>
 
       {/* Lesson navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-8">
         {prevLesson ? (
           <Button variant="outline" asChild>
             <Link to={`/courses/${courseId}/modules/${moduleId}/lessons/${prevLesson.id}`} className="flex items-center">
@@ -85,7 +86,7 @@ const LessonPage: React.FC = () => {
             </Link>
           </Button>
         ) : (
-          <div /> // Empty div to maintain the space
+          <div /> {/* Empty div to maintain the space */}
         )}
         
         {nextLesson ? (

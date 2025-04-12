@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { courses } from '@/data/courses';
 import { modules } from '@/data/modules';
 import { lessons } from '@/data/lessons';
@@ -37,7 +37,7 @@ const ModuleDetailsPage: React.FC = () => {
   }
   
   return (
-    <div className="space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="sm" asChild className="mr-4">
           <Link to={`/courses/${courseId}`}>
@@ -53,7 +53,7 @@ const ModuleDetailsPage: React.FC = () => {
           {course.title} • Module {module.order} of {course.modules}
         </p>
         <h1 className="text-3xl font-bold tracking-tight mt-2">{module.title}</h1>
-        <p className="mt-2 text-muted-foreground">{module.description}</p>
+        <p className="mt-3 text-gray-600">{module.description}</p>
       </div>
 
       {/* Progress */}
@@ -73,18 +73,21 @@ const ModuleDetailsPage: React.FC = () => {
             moduleLessons.map((lesson, index) => (
               <Card key={lesson.id} className="overflow-hidden transition-shadow hover:shadow-md">
                 <Link to={`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`}>
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-3">
                     <CardTitle className="flex items-center">
-                      <span className="bg-muted rounded-full h-8 w-8 flex items-center justify-center mr-3">
+                      <span className="bg-primary/10 text-primary rounded-full h-8 w-8 flex items-center justify-center mr-3">
                         {index + 1}
                       </span>
                       {lesson.title}
+                      {lesson.completed && (
+                        <CheckCircle size={16} className="text-green-500 ml-2" />
+                      )}
                     </CardTitle>
-                    <CardDescription>{lesson.description}</CardDescription>
+                    <CardDescription className="mt-1">{lesson.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex justify-between items-center">
+                  <CardContent className="flex justify-between items-center pt-0">
                     <span className="text-sm text-muted-foreground">{lesson.duration}</span>
-                    <ArrowRight size={16} className="text-muted-foreground" />
+                    <ArrowRight size={16} className="text-primary" />
                   </CardContent>
                 </Link>
               </Card>

@@ -18,16 +18,16 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ module, courseId }) => {
   return (
     <Card className={cn(
       "overflow-hidden transition-shadow hover:shadow-lg",
-      isCompleted && "border-success border-2"
+      isCompleted && "border-green-500 border-2"
     )}>
       <Link to={`/courses/${courseId}/modules/${module.id}`}>
         <CardHeader className="flex flex-row items-start justify-between pb-2">
           <div>
-            <CardTitle className="text-lg">{module.title}</CardTitle>
+            <CardTitle className="text-lg font-bold">{module.title}</CardTitle>
             <CardDescription className="mt-1">{module.description}</CardDescription>
           </div>
           {isCompleted && (
-            <CheckCircle2 className="text-success" size={24} />
+            <CheckCircle2 className="text-green-500" size={24} />
           )}
         </CardHeader>
         <CardContent>
