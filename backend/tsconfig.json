@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    // Target ES2020 for modern JavaScript features
+    "target": "ES2020",
+    // Use Node.js module system
+    "module": "commonjs",
+    // Enable strict type checking
+    "strict": true,
+    // Enable all strict type checking options
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    // Enable decorators for TypeScript
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // Enable source maps for debugging
+    "sourceMap": true,
+    // Output directory for compiled files
+    "outDir": "./dist",
+    // Root directory for source files
+    "rootDir": "./src",
+    // Enable ES module interop
+    "esModuleInterop": true,
+    // Skip type checking of declaration files
+    "skipLibCheck": true,
+    // Force consistent casing in file names
+    "forceConsistentCasingInFileNames": true,
+    // Enable resolve JSON modules
+    "resolveJsonModule": true,
+    // Base directory for resolving non-relative module names
+    "baseUrl": ".",
+    // Path mapping for module resolution
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  // Include all TypeScript files in src directory
+  "include": ["src/**/*"],
+  // Exclude node_modules and dist directory
+  "exclude": ["node_modules", "dist"]
+} 

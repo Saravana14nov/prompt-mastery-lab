@@ -1,0 +1,192 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile management
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  profile       Profile?
+  progress      Progress[]
+  bookmarks     Bookmark[]
+  assessments   AssessmentResult[]
+  prompts       UserPrompt[]
+}
+
+// User profile with additional information
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  bio         String?
+  avatar      String?
+  preferences Json?    // Store user preferences as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Course structure
+model Course {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  level       Level     @default(BASIC)
+  modules     Module[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Course modules
+model Module {
+  id          String    @id @default(uuid())
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id])
+  title       String
+  description String
+  order       Int
+  lessons     Lesson[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Module lessons
+model Lesson {
+  id          String    @id @default(uuid())
+  moduleId    String
+  module      Module    @relation(fields: [moduleId], references: [id])
+  title       String
+  content     Json      // Store lesson content as JSON
+  order       Int
+  challenges  Challenge[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Practice challenges
+model Challenge {
+  id          String    @id @default(uuid())
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id])
+  title       String
+  description String
+  difficulty  Difficulty @default(MEDIUM)
+  solution    Solution?
+  userPrompts UserPrompt[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Challenge solutions
+model Solution {
+  id           String    @id @default(uuid())
+  challengeId  String    @unique
+  challenge    Challenge @relation(fields: [challengeId], references: [id])
+  content      String
+  explanation  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// User progress tracking
+model Progress {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  lessonId  String
+  status    Status   @default(NOT_STARTED)
+  score     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+// Reference library for prompt patterns
+model PromptPattern {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  pattern     String
+  examples    Json      // Store examples as JSON
+  category    String
+  tags        String[]
+  bookmarks   Bookmark[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// User bookmarks
+model Bookmark {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  promptPattern PromptPattern @relation(fields: [patternId], references: [id])
+  patternId     String
+  createdAt     DateTime     @default(now())
+
+  @@unique([userId, patternId])
+}
+
+// User submitted prompts
+model UserPrompt {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  content     String
+  feedback    Json?     // Store AI feedback as JSON
+  score       Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Assessment results
+model AssessmentResult {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  score       Int
+  answers     Json     // Store answers as JSON
+  feedback    Json?    // Store feedback as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+  INSTRUCTOR
+}
+
+enum Level {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Status {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+} 
