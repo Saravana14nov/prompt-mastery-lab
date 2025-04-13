@@ -1,5 +1,6 @@
-import OpenAI from 'openai';
 import { PrismaClient } from '@prisma/client';
+import OpenAI from 'openai';
+import logger from '../utils/logger';
 
 const prisma = new PrismaClient();
 const openai = new OpenAI({
@@ -10,149 +11,138 @@ export class AIService {
   /**
    * Send a message to the AI and get a response
    */
-  static async chat(userId: string, message: string, context?: string) {
+  static async chat(userId: string, message: string, context?: string, language: string = 'en') {
     try {
-      // Get user's learning context if available
-      const userContext = context || await this.getUserLearningContext(userId);
-      
-      // Create system message based on context
-      const systemMessage = this.createSystemMessage(userContext);
-      
-      // Call OpenAI API
       const response = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: 'gpt-4',
         messages: [
-          { role: "system", content: systemMessage },
-          { role: "user", content: message }
+          { role: 'system' as const, content: `You are a helpful AI tutor. Respond in ${language}.` },
+          ...(context ? [{ role: 'system' as const, content: `Context: ${context}` }] : []),
+          { role: 'user' as const, content: message }
         ],
         temperature: 0.7,
         max_tokens: 1000
       });
-      
-      // Save conversation to database
-      await this.saveConversation(userId, message, response.choices[0].message.content || '');
-      
-      return {
-        response: response.choices[0].message.content,
-        usage: response.usage
-      };
+
+      const reply = response.choices[0]?.message?.content || 'No response generated';
+
+      // Store the chat in the database
+      await prisma.conversation.create({
+        data: {
+          userId,
+          message,
+          response: reply,
+          context,
+          language
+        }
+      });
+
+      return { reply };
     } catch (error) {
-      console.error('Error in AI chat:', error);
-      throw new Error('Failed to get AI response');
+      logger.error('Error in AI chat service:', error);
+      throw error;
     }
   }
   
   /**
    * Analyze a user's prompt and provide feedback
    */
-  static async analyzePrompt(prompt: string, context?: string) {
+  static async analyze(
+    userId: string,
+    prompt: string,
+    context?: string,
+    analysisType: 'basic' | 'detailed' | 'comprehensive' = 'basic',
+    includeExamples: boolean = false
+  ) {
     try {
-      const analysisPrompt = `
-        Analyze the following prompt for an AI model. Provide feedback on:
-        1. Clarity: How clear and unambiguous is the prompt?
-        2. Structure: Is it well-organized and logical?
-        3. Completeness: Does it include all necessary context and instructions?
-        4. Efficiency: Could it be more concise or optimized?
-        5. Potential improvements: Specific suggestions for improvement.
-        
-        Context: ${context || 'General prompt engineering'}
-        
-        Prompt to analyze: "${prompt}"
-        
-        Provide your analysis in JSON format with the following structure:
-        {
-          "clarity": { "score": 1-10, "feedback": "explanation" },
-          "structure": { "score": 1-10, "feedback": "explanation" },
-          "completeness": { "score": 1-10, "feedback": "explanation" },
-          "efficiency": { "score": 1-10, "feedback": "explanation" },
-          "improvements": ["suggestion1", "suggestion2", ...],
-          "overallScore": 1-10,
-          "summary": "brief summary of analysis"
-        }
-      `;
+      const systemPrompt = this.getAnalysisPrompt(analysisType, includeExamples);
       
       const response = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: 'gpt-4',
         messages: [
-          { role: "system", content: "You are an expert prompt engineer analyzing prompts." },
-          { role: "user", content: analysisPrompt }
+          { role: 'system' as const, content: systemPrompt },
+          ...(context ? [{ role: 'system' as const, content: `Context: ${context}` }] : []),
+          { role: 'user' as const, content: prompt }
         ],
-        temperature: 0.3,
-        max_tokens: 1500,
-        response_format: { type: "json_object" }
+        temperature: 0.5,
+        max_tokens: 2000
       });
-      
-      return JSON.parse(response.choices[0].message.content || '{}');
+
+      const analysis = response.choices[0]?.message?.content || 'No analysis generated';
+
+      // Store the analysis in the database
+      const result = await prisma.analysis.create({
+        data: {
+          userId,
+          prompt,
+          context,
+          type: analysisType,
+          includeExamples,
+          result: analysis
+        }
+      });
+
+      return { id: result.id, analysis };
     } catch (error) {
-      console.error('Error in prompt analysis:', error);
-      throw new Error('Failed to analyze prompt');
+      logger.error('Error in AI analysis service:', error);
+      throw error;
     }
   }
   
   /**
    * Evaluate a user's prompt against a challenge
    */
-  static async evaluatePrompt(userPrompt: string, challengeId: string) {
+  static async evaluate(
+    userId: string,
+    prompt: string,
+    challengeId: string,
+    evaluationCriteria?: string[],
+    includeFeedback: boolean = true
+  ) {
     try {
-      // Get challenge details
       const challenge = await prisma.challenge.findUnique({
         where: { id: challengeId },
         include: {
-          solution: true,
-          lesson: {
-            include: {
-              module: {
-                include: {
-                  course: true
-                }
-              }
-            }
-          }
+          criteria: true
         }
       });
-      
+
       if (!challenge) {
         throw new Error('Challenge not found');
       }
-      
-      // Create evaluation prompt
-      const evaluationPrompt = `
-        Evaluate the following user prompt against the challenge requirements.
-        
-        Challenge: ${challenge.title}
-        Description: ${challenge.description}
-        Difficulty: ${challenge.difficulty}
-        Expected Solution: ${challenge.solution?.content || 'Not provided'}
-        
-        User's Prompt: "${userPrompt}"
-        
-        Evaluate the prompt and provide feedback in JSON format with the following structure:
-        {
-          "score": 1-100,
-          "meetsRequirements": true/false,
-          "feedback": "detailed feedback",
-          "suggestions": ["suggestion1", "suggestion2", ...],
-          "correctness": 1-10,
-          "creativity": 1-10,
-          "efficiency": 1-10
-        }
-      `;
-      
+
+      const criteria = evaluationCriteria || challenge.criteria.map(c => c.description);
+      const systemPrompt = this.getEvaluationPrompt(criteria, includeFeedback);
+
       const response = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: 'gpt-4',
         messages: [
-          { role: "system", content: "You are an expert prompt engineer evaluating prompts against specific challenges." },
-          { role: "user", content: evaluationPrompt }
+          { role: 'system' as const, content: systemPrompt },
+          { role: 'system' as const, content: `Challenge: ${challenge.description}` },
+          { role: 'user' as const, content: prompt }
         ],
         temperature: 0.3,
-        max_tokens: 1500,
-        response_format: { type: "json_object" }
+        max_tokens: 2000
       });
-      
-      return JSON.parse(response.choices[0].message.content || '{}');
+
+      const evaluation = response.choices[0]?.message?.content || 'No evaluation generated';
+
+      // Store the evaluation in the database
+      const result = await prisma.evaluation.create({
+        data: {
+          userId,
+          prompt,
+          challengeId,
+          criteria,
+          includeFeedback,
+          result: evaluation
+        }
+      });
+
+      return { id: result.id, evaluation };
     } catch (error) {
-      console.error('Error in prompt evaluation:', error);
-      throw new Error('Failed to evaluate prompt');
+      logger.error('Error in AI evaluation service:', error);
+      throw error;
     }
   }
   
@@ -226,5 +216,75 @@ export class AIService {
     } catch (error) {
       console.error('Error saving conversation:', error);
     }
+  }
+
+  static async getAnalysis(id: string, userId: string) {
+    const analysis = await prisma.analysis.findFirst({
+      where: {
+        id,
+        userId
+      }
+    });
+
+    if (!analysis) {
+      throw new Error('Analysis not found');
+    }
+
+    return analysis;
+  }
+
+  static async getEvaluation(id: string, userId: string) {
+    const evaluation = await prisma.evaluation.findFirst({
+      where: {
+        id,
+        userId
+      }
+    });
+
+    if (!evaluation) {
+      throw new Error('Evaluation not found');
+    }
+
+    return evaluation;
+  }
+
+  private static getAnalysisPrompt(type: string, includeExamples: boolean): string {
+    let prompt = 'Analyze the following prompt based on these criteria:\n';
+    
+    switch (type) {
+      case 'comprehensive':
+        prompt += '- Clarity and specificity\n';
+        prompt += '- Goal alignment\n';
+        prompt += '- Constraints and requirements\n';
+        prompt += '- Edge cases and potential issues\n';
+        prompt += '- Language and tone\n';
+        prompt += '- Context completeness\n';
+        break;
+      case 'detailed':
+        prompt += '- Clarity and specificity\n';
+        prompt += '- Goal alignment\n';
+        prompt += '- Constraints and requirements\n';
+        break;
+      default: // basic
+        prompt += '- Clarity and specificity\n';
+        prompt += '- Goal alignment\n';
+    }
+
+    if (includeExamples) {
+      prompt += '\nProvide examples of how the prompt could be improved.';
+    }
+
+    return prompt;
+  }
+
+  private static getEvaluationPrompt(criteria: string[], includeFeedback: boolean): string {
+    let prompt = 'Evaluate the following prompt against these criteria:\n';
+    criteria.forEach(c => prompt += `- ${c}\n`);
+    
+    if (includeFeedback) {
+      prompt += '\nProvide specific feedback and suggestions for improvement.';
+    }
+
+    return prompt;
   }
 } 

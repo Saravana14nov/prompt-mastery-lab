@@ -1,36 +1,68 @@
 import { Request, Response } from 'express';
 import { AIService } from '../services/ai.service';
+import logger from '../utils/logger';
 import { z } from 'zod';
+import { chatSchema, analyzeSchema, evaluateSchema } from '../schemas';
 
 // Validation schemas
-const chatSchema = z.object({
-  message: z.string().min(1),
-  context: z.string().optional()
+export const chatSchema = z.object({
+  message: z.string()
+    .min(1, 'Message cannot be empty')
+    .max(1000, 'Message must be less than 1000 characters')
+    .refine(msg => msg.trim().length > 0, 'Message cannot be only whitespace'),
+  context: z.string()
+    .max(5000, 'Context must be less than 5000 characters')
+    .optional(),
+  language: z.enum(['en', 'es', 'fr', 'de'])
+    .default('en')
+    .optional()
 });
 
-const analyzePromptSchema = z.object({
-  prompt: z.string().min(1),
-  context: z.string().optional()
+export const analyzeSchema = z.object({
+  prompt: z.string()
+    .min(1, 'Prompt cannot be empty')
+    .max(2000, 'Prompt must be less than 2000 characters')
+    .refine(p => p.trim().length > 0, 'Prompt cannot be only whitespace'),
+  context: z.string()
+    .max(5000, 'Context must be less than 5000 characters')
+    .optional(),
+  analysisType: z.enum(['basic', 'detailed', 'comprehensive'])
+    .default('basic')
+    .optional(),
+  includeExamples: z.boolean()
+    .default(false)
+    .optional()
 });
 
-const evaluatePromptSchema = z.object({
-  prompt: z.string().min(1),
-  challengeId: z.string().min(1)
+export const evaluateSchema = z.object({
+  prompt: z.string()
+    .min(1, 'Prompt cannot be empty')
+    .max(2000, 'Prompt must be less than 2000 characters')
+    .refine(p => p.trim().length > 0, 'Prompt cannot be only whitespace'),
+  challengeId: z.string()
+    .uuid('Invalid challenge ID format')
+    .refine(id => id.length === 36, 'Challenge ID must be 36 characters'),
+  evaluationCriteria: z.array(z.string())
+    .min(1, 'At least one evaluation criterion is required')
+    .max(5, 'Maximum 5 evaluation criteria allowed')
+    .optional(),
+  includeFeedback: z.boolean()
+    .default(true)
+    .optional()
 });
 
-export class AIController {
-  /**
-   * Chat with the AI tutor
-   */
+class AIController {
   static async chat(req: Request, res: Response) {
     try {
-      if (!req.user?.id) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
       const data = chatSchema.parse(req.body);
-      const result = await AIService.chat(req.user.id, data.message, data.context);
-      res.json(result);
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const response = await AIService.chat(userId, data.message, data.context, data.language);
+      res.json(response);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -38,23 +70,28 @@ export class AIController {
           details: error.errors
         });
       }
-      console.error('Error in chat controller:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      logger.error('Error in chat:', error);
+      res.status(500).json({ error: 'Failed to process chat request' });
     }
   }
 
-  /**
-   * Analyze a prompt
-   */
-  static async analyzePrompt(req: Request, res: Response) {
+  static async analyze(req: Request, res: Response) {
     try {
-      if (!req.user?.id) {
-        return res.status(401).json({ error: 'Not authenticated' });
+      const data = analyzeSchema.parse(req.body);
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const data = analyzePromptSchema.parse(req.body);
-      const result = await AIService.analyzePrompt(data.prompt, data.context);
-      res.json(result);
+      const analysis = await AIService.analyze(
+        userId,
+        data.prompt,
+        data.context,
+        data.analysisType,
+        data.includeExamples
+      );
+      res.json(analysis);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -62,23 +99,28 @@ export class AIController {
           details: error.errors
         });
       }
-      console.error('Error in analyzePrompt controller:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      logger.error('Error in analyze:', error);
+      res.status(500).json({ error: 'Failed to analyze prompt' });
     }
   }
 
-  /**
-   * Evaluate a prompt against a challenge
-   */
-  static async evaluatePrompt(req: Request, res: Response) {
+  static async evaluate(req: Request, res: Response) {
     try {
-      if (!req.user?.id) {
-        return res.status(401).json({ error: 'Not authenticated' });
+      const data = evaluateSchema.parse(req.body);
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const data = evaluatePromptSchema.parse(req.body);
-      const result = await AIService.evaluatePrompt(data.prompt, data.challengeId);
-      res.json(result);
+      const evaluation = await AIService.evaluate(
+        userId,
+        data.prompt,
+        data.challengeId,
+        data.evaluationCriteria,
+        data.includeFeedback
+      );
+      res.json(evaluation);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -86,11 +128,44 @@ export class AIController {
           details: error.errors
         });
       }
-      if (error instanceof Error && error.message === 'Challenge not found') {
-        return res.status(404).json({ error: error.message });
-      }
-      console.error('Error in evaluatePrompt controller:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      logger.error('Error in evaluate:', error);
+      res.status(500).json({ error: 'Failed to evaluate prompt' });
     }
   }
-} 
+
+  static async getAnalysis(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const analysis = await AIService.getAnalysis(id, userId);
+      res.json(analysis);
+    } catch (error) {
+      logger.error('Error in getAnalysis:', error);
+      res.status(500).json({ error: 'Failed to retrieve analysis' });
+    }
+  }
+
+  static async getEvaluation(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const evaluation = await AIService.getEvaluation(id, userId);
+      res.json(evaluation);
+    } catch (error) {
+      logger.error('Error in getEvaluation:', error);
+      res.status(500).json({ error: 'Failed to retrieve evaluation' });
+    }
+  }
+}
+
+export default AIController; 

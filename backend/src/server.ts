@@ -67,11 +67,14 @@ app.use(aiMetricsMiddleware);
 app.use(cacheMetricsMiddleware);
 
 // Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+const swaggerUiHandler = swaggerUi.setup(swaggerSpec, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Prompt Mastery Lab API Documentation'
-}));
+});
+
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUiHandler);
 
 // Routes
 app.use('/api/auth', authRoutes);

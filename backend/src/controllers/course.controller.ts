@@ -1,31 +1,14 @@
 import { Request, Response } from 'express';
 import { CourseService } from '../services/course.service';
 import { z } from 'zod';
-
-// Validation schemas
-const createCourseSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  level: z.enum(['BASIC', 'INTERMEDIATE', 'ADVANCED'])
-});
-
-const updateCourseSchema = createCourseSchema.partial();
-
-const createModuleSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  order: z.number().int().min(0)
-});
-
-const updateModuleSchema = createModuleSchema.partial();
-
-const createLessonSchema = z.object({
-  title: z.string().min(1),
-  content: z.any(), // JSON content
-  order: z.number().int().min(0)
-});
-
-const updateLessonSchema = createLessonSchema.partial();
+import {
+  createCourseSchema,
+  updateCourseSchema,
+  createModuleSchema,
+  updateModuleSchema,
+  createLessonSchema,
+  updateLessonSchema
+} from '../schemas';
 
 export class CourseController {
   /**

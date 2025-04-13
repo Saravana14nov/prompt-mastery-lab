@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: prompt-mastery-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prompt_mastery
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prompt-mastery-backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/prompt_mastery?schema=public
+      - NODE_ENV=development
+      - PORT=3000
+      - JWT_SECRET=prompt_mastery_jwt_secret_2024
+      - JWT_EXPIRES_IN=7d
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge 
